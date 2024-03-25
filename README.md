@@ -112,6 +112,6 @@ Contributions to the project are welcome! If you find any issues or have suggest
 
 ## Contact
 
-For any inquiries or questions, please contact [SANKET BABAR] at [sanketbabar344@gmail.com].
+For any inquiries or questions, please contact [ASHISH R KALGUTKAR] at [ashishkalgutkar413@gmail.com].
 
 ---
