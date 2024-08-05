@@ -4,326 +4,346 @@
 
 using namespace std;
 
-struct CacheEntry {
+struct CacheEntry
+{
     string key;
     string value;
     time_t timestamp;
-    CacheEntry* left;
-    CacheEntry* right;
+    CacheEntry *left;
+    CacheEntry *right;
 };
 
-class SplayTreeCache {
+class SplayTreeCache
+{
 private:
     int capacity;
-    CacheEntry* root;
-    unordered_map<string, CacheEntry*> cacheMap;
+    CacheEntry *splayTreeRoot;
+    unordered_map<string, CacheEntry *> cacheMap;
 
-    CacheEntry* newNode(string key, string value) {
-        CacheEntry* node = new CacheEntry();
-        node->key = key;
-        node->value = value;
-        node->timestamp = time(nullptr);
-        node->left = nullptr;
-        node->right = nullptr;
-        return node;
+    CacheEntry *newNode(string key, string value)
+    {
+        CacheEntry *newNode = new CacheEntry();
+        newNode->key = key;
+        newNode->value = value;
+        newNode->timestamp = time(nullptr);
+        newNode->left = nullptr;
+        newNode->right = nullptr;
+
+        return newNode;
     }
 
-    CacheEntry* rightRotate(CacheEntry* x) {
-        CacheEntry* y = x->left;
-        x->left = y->right;
-        y->right = x;
-        return y;
+    CacheEntry *leftRotate(CacheEntry *root)
+    {
+        CacheEntry *newRoot = root->right;
+        root->right = newRoot->left;
+        newRoot->left = root;
+
+        return newRoot;
     }
 
-    CacheEntry* leftRotate(CacheEntry* x) {
-        CacheEntry* y = x->right;
-        x->right = y->left;
-        y->left = x;
-        return y;
+    CacheEntry *rightRotate(CacheEntry *root)
+    {
+        CacheEntry *newRoot = root->left;
+        root->left = newRoot->right;
+        newRoot->right = root;
+
+        return newRoot;
     }
 
-    CacheEntry* splay(CacheEntry* node, string key) {
-        if (node == nullptr || node->key == key) {
+    CacheEntry *splay(CacheEntry *node, string key)
+    {
+        if (node == nullptr || node->key == key)
+        {
             return node;
         }
 
-        if (key < node->key) {
-            if (node->left == nullptr) {
+        if (key < node->key)
+        {
+            if (node->left == nullptr)
                 return node;
-            }
 
-            if (key < node->left->key) {
+            if (key < node->left->key)
+            {
                 node->left->left = splay(node->left->left, key);
                 node = rightRotate(node);
             }
-            else if (key > node->left->key) {
+            else if (key > node->left->key)
+            {
                 node->left->right = splay(node->left->right, key);
-                if (node->left->right != nullptr) {
+                if (node->left->right != nullptr)
+                {
                     node->left = leftRotate(node->left);
                 }
             }
 
-            if (node->left == nullptr) {
-                return node;
-            }
-            else {
-                return rightRotate(node);
-            }
-        }
-        else {
-            if (node->right == nullptr) {
+            if (node->left == nullptr)
+            {
                 return node;
             }
 
-            if (key < node->right->key) {
-                node->right->left = splay(node->right->left, key);
-                if (node->right->left != nullptr) {
-                    node->right = rightRotate(node->right);
-                }
-            }
-            else if (key > node->right->key) {
+            return rightRotate(node);
+        }
+        else
+        {
+            if (node->right == nullptr)
+                return node;
+
+            if (key > node->right->key)
+            {
                 node->right->right = splay(node->right->right, key);
                 node = leftRotate(node);
             }
+            else if (key < node->right->key)
+            {
+                node->right->left = splay(node->right->left, key);
+                if (node->right->left != nullptr)
+                {
+                    node->right = rightRotate(node);
+                }
+            }
 
-            if (node->right == nullptr) {
+            if (node->right == nullptr)
+            {
                 return node;
             }
-            else {
-                return leftRotate(node);
-            }
+            return leftRotate(node);
         }
     }
 
-    CacheEntry* find(CacheEntry* node, string key) {
-        if (node == nullptr || node->key == key) {
-            return node;
+    CacheEntry *find(CacheEntry *root, string key)
+    {
+        if (root == nullptr || root->key == key)
+        {
+            return root;
         }
-
-        if (key < node->key) {
-            if (node->left == nullptr) {
-                return node;
-            }
-            return find(node->left, key);
+        if (root->key > key)
+        {
+            return find(root->left, key);
         }
-        else {
-            if (node->right == nullptr) {
-                return node;
-            }
-            return find(node->right, key);
+        else
+        {
+            return find(root->right, key);
         }
     }
 
-    CacheEntry* insert(CacheEntry* node, string key, string value) {
-        if (node == nullptr) {
+    CacheEntry *insertNode(CacheEntry *root, string key, string value)
+    {
+        if (root == nullptr)
             return newNode(key, value);
+
+        root = splay(root, key);
+
+        if (root->key == key)
+        {
+            root->value = value;
+            root->timestamp = time(nullptr);
+            return root;
         }
 
-        node = splay(node, key);
+        CacheEntry *newEntry = newNode(key, value);
 
-        if (node->key == key) {
-            // Update existing entry
-            node->value = value;
-            node->timestamp = time(nullptr);
-            return node;
+        if (key < root->key)
+        {
+            newEntry->right = root;
+            newEntry->left = root->left;
+            root->left = nullptr;
         }
 
-        CacheEntry* newNodePtr = newNode(key, value);
-
-        if (key < node->key) {
-            newNodePtr->right = node;
-            newNodePtr->left = node->left;
-            node->left = nullptr;
-        }
-        else {
-            newNodePtr->left = node;
-            newNodePtr->right = node->right;
-            node->right = nullptr;
+        else
+        {
+            newEntry->left = root;
+            newEntry->right = root->right;
+            root->right = nullptr;
         }
 
-        return newNodePtr;
+        return newEntry;
     }
 
-    CacheEntry* erase(CacheEntry* node, string key) {
-        if (node == nullptr) {
-            return nullptr;
-        }
-
-        node = splay(node, key);
-
-        if (node->key != key) {
+    CacheEntry *findMaxiNode(CacheEntry *node)
+    {
+        if (node == nullptr)
             return node;
-        }
 
-        if (node->left == nullptr) {
-            root = node->right;
-        }
-        else {
-            CacheEntry* maxLeft = findMax(node->left);
-            maxLeft->right = node->right;
-            root = maxLeft;
-        }
-
-        delete node;
-        cacheMap.erase(key);
-
-        return root;
-    }
-
-    CacheEntry* findMax(CacheEntry* node) {
-        if (node == nullptr) {
-            return nullptr;
-        }
-
-        while (node->right != nullptr) {
+        while (node->right != nullptr)
+        {
             node = node->right;
         }
 
         return node;
     }
 
-public:
-    SplayTreeCache(int capacity) {
-        this->capacity = capacity;
-        root = nullptr;
+    CacheEntry *eraseNode(CacheEntry *root, string key)
+    {
+        if (root == nullptr)
+            return root;
+
+        root = splay(root, key);
+
+        if (root->key != key)
+            return root;
+
+        if (root->left == nullptr)
+        {
+            splayTreeRoot = root->right;
+        }
+
+        else
+        {
+            CacheEntry *tempNode = findMaxiNode(root->left);
+            splayTreeRoot = root->left;
+            tempNode->right = root->right;
+        }
+
+        delete root;
+        cacheMap.erase(key);
+        return splayTreeRoot;
     }
 
-    string get(string key) {
-        CacheEntry* entry = find(root, key);
-        if (entry != nullptr && entry->key == key) {
-            entry->timestamp = time(nullptr); // Update the timestamp to mark it as recently used
-            root = splay(root, key);
-            return entry->value;
+public:
+    SplayTreeCache(int capacity)
+    {
+        this->capacity = capacity;
+        splayTreeRoot = nullptr;
+    }
+
+    string get(string key)
+    {
+        CacheEntry *retrivedEntry = find(splayTreeRoot, key);
+        if (retrivedEntry != nullptr && retrivedEntry->key == key)
+        {
+            retrivedEntry->timestamp = time(nullptr);
+            splayTreeRoot = splay(splayTreeRoot, key);
+            return retrivedEntry->value;
         }
         return "";
     }
 
-    void put(string key, string value) {
-        CacheEntry* existingEntry = find(root, key);
-        if (existingEntry != nullptr && existingEntry->key == key) {
-            existingEntry->value = value;
-            existingEntry->timestamp = time(nullptr);
-            root = splay(root, key);
+    void put(string key, string value)
+    {
+        if (get(key) != "")
             return;
+
+        if (cacheMap.size() >= capacity)
+        {
+            CacheEntry *LRU_node = findLeastRecentlyUsed(splayTreeRoot);
+            splayTreeRoot = eraseNode(splayTreeRoot, LRU_node->key);
         }
 
-        if (cacheMap.size() >= capacity) {
-            // Find the least recently used entry by traversing the entire tree
-            CacheEntry* lruEntry = findLeastRecentlyUsed(root);
-            root = erase(root, lruEntry->key);
-        }
-
-        root = insert(root, key, value);
-        cacheMap[key] = root;
+        splayTreeRoot = insertNode(splayTreeRoot, key, value);
+        cacheMap[key] = splayTreeRoot;
     }
 
-    void remove(string key) {
-        root = erase(root, key);
+    void remove(string key)
+    {
+        splayTreeRoot = eraseNode(splayTreeRoot, key);
     }
 
-    void printCache() {
-        cout << "Cache Contents:" << endl;
-        printCacheHelper(root);
+    void printCacheContents()
+    {
+        cout << "The Cache Contents are : " << endl;
+        printCacheHelper(splayTreeRoot);
         cout << endl;
     }
 
 private:
-    void printCacheHelper(CacheEntry* node) {
-        if (node == nullptr) {
+    void printCacheHelper(CacheEntry *root)
+    {
+        if (root == nullptr)
             return;
-        }
 
-        printCacheHelper(node->left);
-        cout << "Key: " << node->key << ", Value: " << node->value << endl;
-        printCacheHelper(node->right);
+        printCacheHelper(root->left);
+        cout << "Key : " << root->key << " ,Value : " << root->value << endl;
+        printCacheHelper(root->right);
     }
 
-    CacheEntry* findLeastRecentlyUsed(CacheEntry* node) {
-        if (node == nullptr) {
-            return nullptr;
-        }
+    CacheEntry *findLeastRecentlyUsed(CacheEntry *root)
+    {
+        if(root == nullptr)return root;
+        CacheEntry *LRU_Node = nullptr;
+        time_t lru_time = time(nullptr);
 
-        CacheEntry* lruEntry = nullptr;
-        time_t lruTime = time(nullptr);
+        traverseTree(root, LRU_Node, lru_time);
 
-        traverseTree(node, lruEntry, lruTime);
-
-        return lruEntry;
+        return LRU_Node;
     }
 
-    void traverseTree(CacheEntry* node, CacheEntry*& lruEntry, time_t& lruTime) {
-        if (node == nullptr) {
+    void traverseTree(CacheEntry *root, CacheEntry *&lru_node, time_t &lru_time)
+    {
+        if (root == nullptr)
             return;
+
+        traverseTree(root->left, lru_node, lru_time);
+        if (root->timestamp < lru_time)
+        {
+            lru_node = root;
+            lru_time = root->timestamp;
         }
-
-        traverseTree(node->left, lruEntry, lruTime);
-
-        if (node->timestamp < lruTime) {
-            lruEntry = node;
-            lruTime = node->timestamp;
-        }
-
-        traverseTree(node->right, lruEntry, lruTime);
+        traverseTree(root->right, lru_node, lru_time);
     }
 };
 
-int main() {
+int main()
+{
     int capacity;
-    cout << "Enter the capacity of the cache: ";
+    cout << "Enter the capacity of the cache : ";
     cin >> capacity;
 
     SplayTreeCache cache(capacity);
 
     char choice;
-    do {
-        cout << "\nSelect an option:\n";
-        cout << "1. Add an entry\n";
-        cout << "2. Retrieve an entry\n";
-        cout << "3. Remove an entry\n";
-        cout << "4. Print cache contents\n";
-        cout << "5. Exit\n";
-        cout << "Enter your choice: ";
+    do
+    {
+        cout << "\nPlease Select from the given option :\n";
+        cout << "1. Add an entry \n";
+        cout << "2. Retrive an entry \n";
+        cout << "3. Remove an entry \n";
+        cout << "4. Print contents of cache \n";
+        cout << "5. Exit \n";
+        cout << "Enter your choice : ";
+
         cin >> choice;
 
-        switch (choice) {
-            case '1': {
-                string key, value;
-                cout << "Enter key: ";
-                cin >> key;
-                cout << "Enter value: ";
-                cin >> value;
-                cache.put(key, value);
-                break;
+        string key, value;
+
+        switch (choice)
+        {
+
+        case '1':
+            cout << "Enter key : ";
+            cin >> key;
+            cout << "Enter value : ";
+            cin >> value;
+            cache.put(key, value);
+            break;
+        case '2':
+            cout << "Enter the Key to search : ";
+            cin >> key;
+            value = cache.get(key);
+            if (!value.empty())
+            {
+                cout << "Value :" << value << endl;
             }
-            case '2': {
-                string key;
-                cout << "Enter key: ";
-                cin >> key;
-                string value = cache.get(key);
-                if (!value.empty()) {
-                    cout << "Value: " << value << endl;
-                } else {
-                    cout << "Entry not found in cache." << endl;
-                }
-                break;
+            else
+            {
+                cout << "Entry not found in cache" << endl;
             }
-            case '3': {
-                string key;
-                cout << "Enter key: ";
-                cin >> key;
-                cache.remove(key);
-                cout << "Entry removed from cache." << endl;
-                break;
-            }
-            case '4':
-                cache.printCache();
-                break;
-            case '5':
-                cout << "Exiting program." << endl;
-                break;
-            default:
-                cout << "Invalid choice. Please try again." << endl;
-                break;
+            break;
+        case '3':
+            cout << "Enter the key to be removed : ";
+            cin >> key;
+            cache.remove(key);
+            cout << "Entry removed from cache " << endl;
+            break;
+        case '4':
+            cache.printCacheContents();
+            break;
+        case '5':
+            cout << "Exiting program ..." << endl;
+            break;
+
+        default:
+            cout << "Invalid choice, please try again ..." << endl;
+            break;
         }
 
     } while (choice != '5');
